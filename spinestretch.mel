@@ -1,0 +1,67 @@
+//create a splineStreath..............
+if (`window -ex "splTranStretch"`)
+deleteUI splTranStretch;
+window -t "splTranStretchWind" -mxb 0 splTranStretch;
+columnLayout -adj 1;
+separator -w 50 -h 10;
+text -l "----PC----" -bgc 1 .8 .2;
+separator -st "singleDash" -w 50 -h 10;
+text -l ".....select ikSplineHandle and click the stretch button.....";
+separator -st "doubleDash" -w 50 -h 10;
+button -l "stretch" -c splTranStretchProc;
+separator -st "doubleDash" -w 50 -h 10;
+text -l ".....dummyLocator connect to the Globalctrl.....";
+separator -st "doubleDash" -w 50 -h 10;
+showWindow splTranStretch;
+
+
+//spline global proc
+global proc splTranStretchProc()
+{
+    string $sel[] = `ls -sl`;
+    string $jnts[] = `ikHandle -q -jl $sel`;
+    select $jnts[0];
+    select -hi;
+    string $selJntDummy[] = `ls -sl`;
+    int $jntsNumDummy = `size $selJntDummy`;
+    int $num = $jntsNumDummy - 1;
+    select -cl;
+    //select $selJntDummy[$num];
+   
+   select $selJntDummy;
+   select -d $selJntDummy[0] $selJntDummy[$num];
+   string $selJnt[] = `ls -sl`;
+   string $splJnts = `size $selJnt`;
+   select -cl;
+   string $ikCurve = `ikHandle -q -c $sel`;
+   string $loc[] = `spaceLocator -p 0 0 0 -n ("locDummy" + "_#")`;
+   select $ikCurve;
+   string $arc = `arclen -ch 1 $ikCurve`;
+   select -cl;
+   
+   for($x = 0; $x < 3; $x++)
+   {
+       string $splMDN = `shadingNode -asUtility multiplyDivide -n ($sel[0] + "_mdn" + "_#")`;
+   }
+   select -cl;
+   
+   connectAttr -f ($arc + ".arcLength") (($sel[0] + "_mdn" + "_2") + ".input1X");
+   setAttr (($sel[0] + "_mdn" + "_2") + ".operation") 2;
+   connectAttr -f ($loc[0] + ".sx") (($sel[0] + "_mdn" + "_1") + ".input1X");
+   connectAttr -f (($sel[0] + "_mdn" + "_1") + ".outputX") (($sel[0] + "_mdn" + "_2") + ".input2X");
+   connectAttr -f (($sel[0] + "_mdn" + "_2") + ".outputX") (($sel[0] + "_mdn" + "_3") + ".input1X");
+   select -cl;
+   
+   float $SMD2V = `getAttr (($sel[0] + "_mdn" + "_2") + ".input1X")`;
+   float $Sj2v = `getAttr ($selJnt[1] + ".tx")`;
+   float $SFV = $SMD2V/$Sj2v;   
+   setAttr (($sel[0] + "_mdn" + "_1") + ".input2X") $SFV;
+   select -cl;
+   
+   string $eachObj;
+   for ($eachObj in $selJnt)
+   {
+       connectAttr -f (($sel[0] + "_mdn" + "_3") + ".outputX") ($eachObj + ".tx");
+   }
+   select -cl;    
+}
